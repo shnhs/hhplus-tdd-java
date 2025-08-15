@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.hhplus.tdd.database.PointHistoryTable;
@@ -143,7 +142,7 @@ public class PointServiceTest {
     // then
     verify(userPointTable).selectById(validId);
     verify(userPointTable).insertOrUpdate(validId, prevAmount + chargeAmount);
-    verify(pointHistoryTable, times(1));
+
     assertEquals(result.point(), prevAmount + chargeAmount);
   }
 
