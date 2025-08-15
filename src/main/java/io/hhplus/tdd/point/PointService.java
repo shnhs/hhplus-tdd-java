@@ -23,9 +23,36 @@ public class PointService {
     return pointHistoryTable.selectAllByUserId(id);
   }
 
+  public UserPoint chargePoint(long id, long chargeAmount) throws Exception {
+    idValidationCheck(id);
+    amountValidationCheck(chargeAmount);
+
+    long prevPointAmount = userPointTable.selectById(id).point();
+
+    UserPoint chargedPoint = userPointTable.insertOrUpdate(
+      id,
+      prevPointAmount + chargeAmount
+    );
+
+    pointHistoryTable.insert(
+      id,
+      chargeAmount,
+      TransactionType.CHARGE,
+      System.currentTimeMillis()
+    );
+
+    return chargedPoint;
+  }
+
   private void idValidationCheck(Long id) throws Exception {
     if (id < 0) {
       throw new Exception("유저 ID는 음수일 수 없습니다.");
+    }
+  }
+
+  private void amountValidationCheck(Long amount) throws Exception {
+    if (amount < 0) {
+      throw new Exception("포인트 충전/사용 값은 음수일 수 없습니다.");
     }
   }
 }

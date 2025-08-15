@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.hhplus.tdd.database.PointHistoryTable;
@@ -104,5 +105,57 @@ public class PointServiceTest {
     // then
     verify(pointHistoryTable).selectAllByUserId(validId);
     assertEquals(result.size(), 2);
+  }
+
+  /**
+   * UserPointTable 로직상 기존 포인트에 충전할 포인트을 더하여 insertOrUpdate를 호출.
+   * 충전 결과 포인트로 메서드가 호출되는지 확인.
+   * 호출후 리턴되는 값이 기존 포인트 + 충전할 포인트 인지 확인.
+   * 충전으로 포인트 내역을 쌓았는지 확인.
+   */
+  @Test
+  @DisplayName("chargePoint - 정상적인 입력값")
+  void patchChargePoint_validInput() throws Exception {
+    // given
+    Long validId = 1L;
+    Long prevAmount = 1000L;
+    Long chargeAmount = 2000L;
+
+    UserPoint previousPoint = new UserPoint(
+      validId,
+      prevAmount,
+      System.currentTimeMillis()
+    );
+
+    UserPoint chargedPoint = new UserPoint(
+      validId,
+      prevAmount + chargeAmount,
+      System.currentTimeMillis()
+    );
+
+    // when
+    given(userPointTable.selectById(validId)).willReturn(previousPoint);
+    given(userPointTable.insertOrUpdate(validId, prevAmount + chargeAmount))
+      .willReturn(chargedPoint);
+
+    UserPoint result = pointService.chargePoint(validId, chargeAmount);
+
+    // then
+    verify(userPointTable).selectById(validId);
+    verify(userPointTable).insertOrUpdate(validId, prevAmount + chargeAmount);
+    verify(pointHistoryTable, times(1));
+    assertEquals(result.point(), prevAmount + chargeAmount);
+  }
+
+  @Test
+  @DisplayName("chargePoint - 음수 포인트 충전 시도")
+  void patchChargePoint_invalidAmount() {
+    Long validId = 1L;
+    Long invalidAmount = -1000L;
+
+    // when + then
+    assertThatThrownBy(() -> pointService.chargePoint(validId, invalidAmount))
+      .isInstanceOf(Exception.class)
+      .hasMessageContaining("음수");
   }
 }
