@@ -44,6 +44,31 @@ public class PointService {
     return chargedPoint;
   }
 
+  public UserPoint usePoint(long id, long useAmount) throws Exception {
+    idValidationCheck(id);
+    amountValidationCheck(useAmount);
+
+    long prevPoint = userPointTable.selectById(id).point();
+
+    if (prevPoint < useAmount) {
+      throw new Exception("포인트가 부족합니다.");
+    }
+
+    UserPoint insertOrUpdate = userPointTable.insertOrUpdate(
+      id,
+      prevPoint - useAmount
+    );
+
+    pointHistoryTable.insert(
+      id,
+      useAmount,
+      TransactionType.USE,
+      System.currentTimeMillis()
+    );
+
+    return insertOrUpdate;
+  }
+
   private void idValidationCheck(Long id) throws Exception {
     if (id < 0) {
       throw new Exception("유저 ID는 음수일 수 없습니다.");

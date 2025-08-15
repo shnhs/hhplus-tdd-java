@@ -157,4 +157,82 @@ public class PointServiceTest {
       .isInstanceOf(Exception.class)
       .hasMessageContaining("음수");
   }
+
+  /**
+   * 사용 결과 포인트로 메서드가 호출되는지 확인.
+   * 호출 후 리턴되는 값이 (기존 포인트 - 사용할 포인트) 인지 확인.
+   */
+  @Test
+  @DisplayName("usePoint - 정상적인 입력값")
+  void patchUsePoint_validInput() throws Exception {
+    Long testId = 1L;
+    Long prevAmount = 5000L;
+    Long useAmount = 1000L;
+
+    UserPoint prevPoint = new UserPoint(
+      testId,
+      prevAmount,
+      System.currentTimeMillis()
+    );
+
+    UserPoint curPoint = new UserPoint(
+      testId,
+      prevAmount - useAmount,
+      System.currentTimeMillis()
+    );
+
+    // when
+    given(userPointTable.selectById(testId)).willReturn(prevPoint);
+    given(userPointTable.insertOrUpdate(testId, prevAmount - useAmount))
+      .willReturn(curPoint);
+
+    UserPoint result = pointService.usePoint(testId, useAmount);
+
+    // then
+    verify(userPointTable).selectById(testId);
+    verify(userPointTable).insertOrUpdate(testId, prevAmount - useAmount);
+
+    assertEquals(result.point(), prevAmount - useAmount);
+  }
+
+  /**
+   * 조회된 현재 상태의 포인트가 사용할 포인트보다 작다면 에러발생 확인.
+   */
+  @Test
+  @DisplayName("usePoint - 현재 포인트가 모자른 경우")
+  void patchUsePoint_amountInsufficient() {
+    // given
+    Long testId = 1L;
+    Long prevAmount = 1000L;
+    Long useAmount = 3000L;
+
+    UserPoint prevPoint = new UserPoint(
+      testId,
+      prevAmount,
+      System.currentTimeMillis()
+    );
+
+    // when
+    given(userPointTable.selectById(testId)).willReturn(prevPoint);
+
+    // then
+    assertThatThrownBy(() -> pointService.usePoint(testId, useAmount))
+      .isInstanceOf(Exception.class)
+      .hasMessageContaining("부족");
+  }
+
+  /**
+   * 음수 포인트를 사용시도 할 경우 에러발생 확인
+   */
+  @Test
+  @DisplayName("usePoint - 음수 포인트 사용 시도")
+  void patchUsePoint_invalidAmount() {
+    Long testId = 1L;
+    Long invalidAmount = -1000L;
+
+    // when + then
+    assertThatThrownBy(() -> pointService.usePoint(testId, invalidAmount))
+      .isInstanceOf(Exception.class)
+      .hasMessageContaining("음수");
+  }
 }
