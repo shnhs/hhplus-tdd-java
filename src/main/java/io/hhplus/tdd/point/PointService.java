@@ -14,16 +14,18 @@ public class PointService {
   private final PointHistoryTable pointHistoryTable;
 
   public UserPoint getUserPoint(Long id) throws Exception {
-    if (id < 0) {
-      throw new Exception("유저 ID는 음수일 수 없습니다.");
-    }
+    idValidationCheck(id);
     return userPointTable.selectById(id);
   }
 
   public List<PointHistory> getPointHistory(long id) throws Exception {
+    idValidationCheck(id);
+    return pointHistoryTable.selectAllByUserId(id);
+  }
+
+  private void idValidationCheck(Long id) throws Exception {
     if (id < 0) {
       throw new Exception("유저 ID는 음수일 수 없습니다.");
     }
-    return pointHistoryTable.selectAllByUserId(id);
   }
 }
