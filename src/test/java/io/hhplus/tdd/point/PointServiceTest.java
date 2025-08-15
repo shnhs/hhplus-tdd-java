@@ -6,7 +6,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import io.hhplus.tdd.database.PointHistoryTable;
 import io.hhplus.tdd.database.UserPointTable;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,12 +16,15 @@ import org.junit.jupiter.api.Test;
 public class PointServiceTest {
 
   private PointService pointService;
+
   private UserPointTable userPointTable;
+  private PointHistoryTable pointHistoryTable;
 
   @BeforeEach
   void setUp() {
     userPointTable = mock(UserPointTable.class);
-    pointService = new PointService(userPointTable);
+    pointHistoryTable = mock(PointHistoryTable.class);
+    pointService = new PointService(userPointTable, pointHistoryTable);
   }
 
   /**
@@ -61,5 +66,43 @@ public class PointServiceTest {
     assertThatThrownBy(() -> pointService.getUserPoint(invalidId))
       .isInstanceOf(Exception.class)
       .hasMessageContaining("음수");
+  }
+
+  /**
+   * 포인트 내역 조회 기능은 PointHistoryTable을 통해 유저 ID로 조회.
+   * PointHistoryTable의 selectAllByUserId가 호출되었는지 확인.
+   * 호출된 결과가 의도된 List인지 검증하기 위해 리스트의 사이즈 확인.
+   *
+   */
+  @Test
+  @DisplayName("getPointHistories - 정상적인 ID")
+  void getPointHistory_validId() throws Exception {
+    // given
+    Long validId = 1L;
+    List<PointHistory> pointHistories = List.of(
+      new PointHistory(
+        0,
+        1L,
+        10000L,
+        TransactionType.CHARGE,
+        System.currentTimeMillis()
+      ),
+      new PointHistory(
+        1,
+        1L,
+        5000,
+        TransactionType.USE,
+        System.currentTimeMillis()
+      )
+    );
+
+    //when
+    given(pointHistoryTable.selectAllByUserId(validId))
+      .willReturn(pointHistories);
+    List<PointHistory> result = pointService.getPointHistory(validId);
+
+    // then
+    verify(pointHistoryTable).selectAllByUserId(validId);
+    assertEquals(result.size(), 2);
   }
 }

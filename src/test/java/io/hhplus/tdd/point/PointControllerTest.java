@@ -1,10 +1,12 @@
 package io.hhplus.tdd.point;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,5 +63,41 @@ public class PointControllerTest {
     mockMvc
       .perform(get("/point/{id}", testId))
       .andExpect(status().isBadRequest());
+  }
+
+  /**
+   * 유효한 ID로 정상적인 List가 리턴되는지 확인
+   * 리턴된 List가 의도된 결과인지 확인하기 위해 크기 확인
+   */
+  @Test
+  @DisplayName("/GET /point/{id}/histories - 포인트 충전/이용 내역 조회")
+  void getPointHistories() throws Exception {
+    // given
+    Long testId = 1L;
+    List<PointHistory> pointHistories = List.of(
+      new PointHistory(
+        0,
+        1L,
+        10000L,
+        TransactionType.CHARGE,
+        System.currentTimeMillis()
+      ),
+      new PointHistory(
+        1,
+        1L,
+        5000,
+        TransactionType.USE,
+        System.currentTimeMillis()
+      )
+    );
+
+    // when
+    given(pointService.getPointHistory(testId)).willReturn(pointHistories);
+
+    // then
+    mockMvc
+      .perform(get("/point/{id}/histories", testId))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$", hasSize(2)));
   }
 }
